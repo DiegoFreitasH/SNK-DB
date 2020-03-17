@@ -12,12 +12,16 @@
 #include "../db_buffer.h"
 #include "../../db_config.h"
 
+#define MIN_LC BUFFER_SIZE*0.1
+
 void insert_MRU(struct List * list, struct Node * node);
 struct Node * remove_LRU(struct List * list);
 void move_to_MRU(struct List * list, struct Page * page);
+void move_to_hot_MRU(struct List * hot, struct List * cold, struct Page * page);
 
 
-struct List * list;
+struct List * cold;
+struct List * hot;
 
 /*
  * This function is called after initializing the buffer and before page requests.
@@ -28,7 +32,8 @@ void buffer_policy_start(){
     printf("\nBuffer Replacement Policy: %s", __FILE__);
     printf("\n---------------------------------------------------------------------------------------------------");
 	
-    list = list_create(buffer_print_page,NULL);
+    cold = list_create(buffer_print_page, NULL);
+	hot = list_create(buffer_print_page, NULL);
 }
 
 
@@ -40,34 +45,33 @@ struct Page * buffer_request_page(int file_id, long block_id, char operation){
 	buffer_computes_request_statistics(page, operation);
 	//--------------------------------------------------------
 
-	if(page != NULL){ //HIT - Update MRU
+	if(page != NULL){ //HIT 
+		
+		move_to_hot_MRU(hot, cold, page);
 
-		move_to_MRU(list, page);
-
-	} else { // MISS - page is not in Buffer (struct Page * page == NULL)
-
-		if (buffer_is_full() == FALSE) {
-
+	} else { // MISS 
+		if(buffer_is_full() == FALSE){ 
+			
 			page = buffer_get_free_page();
 			struct Node * new_node = list_create_node(page);
-			buffer_load_page(file_id, block_id, page); // Read the data from storage media
-			insert_MRU(list, new_node);
-
-		} else { // Need a replacement
-
-			printf("\n ---- REPLACEMENT ------ ");
-			struct Node * lru_node = remove_LRU(list);
-			struct Page * victim = (struct Page *) lru_node->content; //Get the LRU Page
-
-			buffer_flush_page(victim); // Flush the data to the secondary storage media if is dirty
-
-			page = buffer_reset_page(victim); // To avoid malloc a new page we reuse the victim page
-
-			buffer_load_page(file_id, block_id, page); // Read new data from storage media
-			insert_MRU(list, lru_node);
-
+			buffer_load_page(file_id, block_id, page);
+			insert_MRU(cold, new_node);
+		
 		}
+		else {
 
+			printf("\n ---- REPLACEMENT ------ ");	
+			struct Node * lru_node = (cold->size <= MIN_LC) ? remove_LRU(hot) : remove_LRU(cold);
+
+			struct Page * victim = (struct Page *) lru_node->content;
+
+			buffer_flush_page(victim);
+
+			page = buffer_reset_page(victim);
+			buffer_load_page(file_id, block_id, page);
+			insert_MRU(cold, lru_node);
+		
+		}
 	}
 	set_dirty(page, operation);
 	return page;
@@ -86,6 +90,13 @@ void move_to_MRU(struct List * list, struct Page * page){
 	struct Node * node = (struct Node *) page->extended_attributes;
 	list_remove(list,node);
 	list_insert_node_head(list,node);
+}
+
+void move_to_hot_MRU(struct List * hot, struct List * cold, struct Page * page){
+	struct Node * node = (struct Node *) page->extended_attributes;
+	if(node->list == cold) list_remove(cold, node);
+	else list_remove(hot, node);  
+	list_insert_node_head(hot, node);
 }
 
 #endif
