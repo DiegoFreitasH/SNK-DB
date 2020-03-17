@@ -45,11 +45,12 @@ struct Page * buffer_request_page(int file_id, long block_id, char operation){
 	buffer_computes_request_statistics(page, operation);
 	//--------------------------------------------------------
 
-	if(page != NULL){ //HIT 
+	if(page != NULL){ //HIT - Move page to MRU of Hot list
 		
 		move_to_hot_MRU(hot, cold, page);
 
-	} else { // MISS 
+	} else { // MISS - page is not in Buffer (struct Page * page == NULL)
+		
 		if(buffer_is_full() == FALSE){ 
 			
 			page = buffer_get_free_page();
@@ -101,8 +102,14 @@ void move_to_MRU(struct List * list, struct Page * page){
 
 void move_to_hot_MRU(struct List * hot, struct List * cold, struct Page * page){
 	struct Node * node = (struct Node *) page->extended_attributes;
-	if(node->list == cold) list_remove(cold, node);
-	else list_remove(hot, node);  
+	
+	if(node->list == cold) { 
+		list_remove(cold, node);
+	}
+	else { 
+		list_remove(hot, node); 
+	} 
+	
 	list_insert_node_head(hot, node);
 }
 
