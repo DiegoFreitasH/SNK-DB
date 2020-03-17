@@ -51,7 +51,7 @@ struct Page * buffer_request_page(int file_id, long block_id, char operation){
 
 	} else { // MISS - page is not in Buffer (struct Page * page == NULL)
 		
-		if(buffer_is_full() == FALSE){ 
+		if(buffer_is_full() == FALSE){  // Insert page in MRU of Cold list
 			
 			page = buffer_get_free_page();
 			struct Node * new_node = list_create_node(page);
@@ -59,7 +59,7 @@ struct Page * buffer_request_page(int file_id, long block_id, char operation){
 			insert_MRU(cold, new_node);
 		
 		}
-		else {
+		else { // Needs replacement 
 
 			printf("\n ---- REPLACEMENT ------ ");	
 			struct Node * lru_node;
@@ -73,10 +73,12 @@ struct Page * buffer_request_page(int file_id, long block_id, char operation){
 
 			struct Page * victim = (struct Page *) lru_node->content;
 
-			buffer_flush_page(victim);
+			buffer_flush_page(victim); // Flush the data to the secondary storage media if is dirty
 
-			page = buffer_reset_page(victim);
-			buffer_load_page(file_id, block_id, page);
+			page = buffer_reset_page(victim); // To avoid malloc a new page we reuse the victim page
+
+			buffer_load_page(file_id, block_id, page); // Read new data from storage media
+			
 			insert_MRU(cold, lru_node);
 		
 		}
