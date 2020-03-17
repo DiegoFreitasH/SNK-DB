@@ -61,7 +61,14 @@ struct Page * buffer_request_page(int file_id, long block_id, char operation){
 		else {
 
 			printf("\n ---- REPLACEMENT ------ ");	
-			struct Node * lru_node = (cold->size <= MIN_LC) ? remove_LRU(hot) : remove_LRU(cold);
+			struct Node * lru_node;
+			
+			if(cold->size <= MIN_LC){
+				lru_node = remove_LRU(hot);	
+			}
+			else {
+				lru_node = remove_LRU(cold);
+			}
 
 			struct Page * victim = (struct Page *) lru_node->content;
 

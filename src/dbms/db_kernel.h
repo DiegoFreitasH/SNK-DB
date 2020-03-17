@@ -44,6 +44,8 @@
 	#include "buffer_manager/policies/FIFO.h"
 #elif ARC
 	#include "buffer_manager/policies/ARC.h"
+#elif ADLRU
+	#include "buffer_manager/policies/ADLRU.h"
 
 #else // If no policy has been chosen. Use LRU as default
 	#include "buffer_manager/policies/LRU.h"
