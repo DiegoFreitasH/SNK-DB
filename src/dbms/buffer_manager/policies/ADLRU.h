@@ -62,16 +62,16 @@ struct Page * buffer_request_page(int file_id, long block_id, char operation){
 		else { // Needs replacement 
 
 			printf("\n ---- REPLACEMENT ------ ");	
-			struct Node * lru_node;
+			struct Node * victim_node;
 			
 			if(cold->size <= MIN_LC){
-				lru_node = remove_LRU(hot);	
+				victim_node = select_victim(hot);	
 			}
 			else {
-				lru_node = remove_LRU(cold);
+				victim_node = select_victim(cold);
 			}
 
-			struct Page * victim = (struct Page *) lru_node->content;
+			struct Page * victim = (struct Page *) victim_node->content;
 
 			buffer_flush_page(victim); // Flush the data to the secondary storage media if is dirty
 
@@ -79,7 +79,7 @@ struct Page * buffer_request_page(int file_id, long block_id, char operation){
 
 			buffer_load_page(file_id, block_id, page); // Read new data from storage media
 			
-			insert_MRU(cold, lru_node);
+			insert_MRU(cold, victim_node);
 		
 		}
 	}
@@ -100,6 +100,34 @@ void move_to_MRU(struct List * list, struct Page * page){
 	struct Node * node = (struct Node *) page->extended_attributes;
 	list_remove(list,node);
 	list_insert_node_head(list,node);
+}
+
+struct Node * clock_victim(struct List * list){
+	struct Node * node = list->tail;
+	while(node->content){
+		/*
+		* Reduce reference number
+		*/
+		node = node->next;
+		if(node == NULL){
+			node = list->tail;
+		}
+	}
+}
+
+struct Node * select_victim(struct List * list){
+	struct Node * node = list->tail;
+
+	while(node != NULL && ((struct Page*)node->content)->dirty_flag != PAGE_CLEAN ){
+		node = node->prev;
+	}
+	
+	if(node) {
+		return node;
+	}
+	else {
+		return clock_victim(list);
+	}
 }
 
 void move_to_hot_MRU(struct List * hot, struct List * cold, struct Page * page){
