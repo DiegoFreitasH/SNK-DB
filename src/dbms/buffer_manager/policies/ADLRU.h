@@ -17,7 +17,7 @@
 void insert_MRU(struct List * list, struct Node * node);
 struct Node * remove_LRU(struct List * list);
 void move_to_MRU(struct List * list, struct Page * page);
-struct Node * clock_victim(struct List * list);
+struct Node * clock_police_victim(struct List * list);
 struct Node * select_victim(struct List * list);
 void move_to_hot_MRU(struct List * hot, struct List * cold, struct Page * page);
 
@@ -105,7 +105,7 @@ void move_to_MRU(struct List * list, struct Page * page){
 	list_insert_node_head(list,node);
 }
 
-struct Node * clock_victim(struct List * list){ // Executes the clock police
+struct Node * clock_police_victim(struct List * list){ // Executes the clock police
 	struct Node * node = list->tail;
 	struct Page * page = ((struct Page*)node->content);
 	
@@ -128,8 +128,8 @@ struct Node * select_victim(struct List * list){
 		node = node->prev;
 	}
 	
-	if(node == NULL) { // All the pages are dirt
-		node = clock_victim(list);
+	if(node == NULL) { // All the pages are dirty
+		node = clock_police_victim(list);
 	}
 
 	return list_remove(list, node);
