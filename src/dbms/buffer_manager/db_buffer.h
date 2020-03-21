@@ -41,6 +41,7 @@ struct Page{
 	char status;     // Status of page (STATUS_LOCKED or STATUS_UNLOCKED)
 	char dirty_flag; // If the page is DIRTY or CLEAN
 
+	int reference; 
 	void * extended_attributes; // Used to add new attributes depending on the page replacement policy
 };
 
