@@ -105,11 +105,11 @@ void move_to_MRU(struct List * list, struct Page * page){
 	list_insert_node_head(list,node);
 }
 
-struct Node * clock_victim(struct List * list){
+struct Node * clock_victim(struct List * list){ // Executes the clock police
 	struct Node * node = list->tail;
 	struct Page * page = ((struct Page*)node->content);
 	
-	while(page->reference != 0){
+	while(page->reference != 0){ // Search for a page with reference 0 from LRU to MRU
 		page->reference = page->reference - 1;
 		node = node->prev;
 		if(node == NULL){
@@ -124,12 +124,11 @@ struct Node * clock_victim(struct List * list){
 struct Node * select_victim(struct List * list){
 	struct Node * node = list->tail;
 
-	while(node != NULL && ((struct Page*)node->content)->dirty_flag != PAGE_CLEAN ){
+	while(node != NULL && ((struct Page*)node->content)->dirty_flag != PAGE_CLEAN ){ // Search for the first Clean Page
 		node = node->prev;
 	}
 	
-	if(node == NULL) {
-		printf("Clock Loop");
+	if(node == NULL) { // All the pages are dirt
 		node = clock_victim(list);
 	}
 
