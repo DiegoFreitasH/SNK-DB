@@ -64,16 +64,16 @@ struct Page * buffer_request_page(int file_id, long block_id, char operation){
 		}
 		else { // Needs replacement 
 			printf("\n ---- REPLACEMENT ------ ");	
-			struct Node * lru_node;
+			struct Node * victim_node;
 			
 			if(cold->size <= MIN_LC){
-				lru_node = select_victim(hot);	
+				victim_node = select_victim(hot);	
 			}
 			else {
-				lru_node = select_victim(cold);
+				victim_node = select_victim(cold);
 			}
 
-			struct Page * victim = (struct Page *) lru_node->content;
+			struct Page * victim = (struct Page *) victim_node->content;
 
 			buffer_flush_page(victim); // Flush the data to the secondary storage media if is dirty
 
@@ -81,7 +81,7 @@ struct Page * buffer_request_page(int file_id, long block_id, char operation){
 
 			buffer_load_page(file_id, block_id, page); // Read new data from storage media
 			
-			insert_MRU(cold, lru_node);
+			insert_MRU(cold, victim_node);
 		
 		}
 		page->reference = 0;
