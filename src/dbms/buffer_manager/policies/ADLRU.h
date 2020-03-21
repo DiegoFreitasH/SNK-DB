@@ -63,7 +63,6 @@ struct Page * buffer_request_page(int file_id, long block_id, char operation){
 		
 		}
 		else { // Needs replacement 
-			printf("%c[%d-%ld]", operation, file_id, block_id);
 			printf("\n ---- REPLACEMENT ------ ");	
 			struct Node * lru_node;
 			
@@ -111,14 +110,14 @@ struct Node * clock_victim(struct List * list){
 	struct Page * page = ((struct Page*)node->content);
 	
 	while(page->reference != 0){
-		page->reference = 0;
+		page->reference = page->reference - 1;
 		node = node->prev;
 		if(node == NULL){
 			node = list->tail;
 		}
 		page = ((struct Page*)node->content);
 	}
-	
+
 	return node;
 }
 
@@ -129,14 +128,12 @@ struct Node * select_victim(struct List * list){
 		node = node->prev;
 	}
 	
-	if(node != NULL) {
-		printf("Clean Loop\n");
-		return node;
+	if(node == NULL) {
+		printf("Clock Loop");
+		node = clock_victim(list);
 	}
-	else {
-		printf("Clock Loop\n");
-		return clock_victim(list);
-	}
+
+	return list_remove(list, node);
 }
 
 void move_to_hot_MRU(struct List * hot, struct List * cold, struct Page * page){
